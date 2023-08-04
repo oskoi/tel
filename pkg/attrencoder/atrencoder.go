@@ -21,6 +21,10 @@ const (
 	MsgKey        = "msg"
 )
 
+const (
+	placeholderInvalidUTF8 = "<invalid_utf8>"
+)
+
 var (
 	_pool = buffer.NewPool()
 	// Get retrieves a buffer from the pool, creating one if necessary.
@@ -85,9 +89,12 @@ func (a *AtrEncoder) AddBinary(key string, value []byte) {
 }
 
 func (a *AtrEncoder) AddByteString(key string, value []byte) {
-	if utf8.Valid(value) {
-		a.attrs = append(a.attrs, attribute.String(key, string(value)))
+	if !utf8.Valid(value) {
+		a.attrs = append(a.attrs, attribute.String(key, placeholderInvalidUTF8))
+		return
 	}
+
+	a.attrs = append(a.attrs, attribute.String(key, string(value)))
 }
 
 func (a *AtrEncoder) AddBool(key string, value bool) {
@@ -142,9 +149,12 @@ func (a *AtrEncoder) AddString(key, value string) {
 	//	return
 	//}
 
-	if utf8.ValidString(value) {
-		a.attrs = append(a.attrs, attribute.String(key, value))
+	if !utf8.ValidString(value) {
+		a.attrs = append(a.attrs, attribute.String(key, placeholderInvalidUTF8))
+		return
 	}
+
+	a.attrs = append(a.attrs, attribute.String(key, value))
 }
 
 func (a *AtrEncoder) AddTime(key string, value time.Time) {

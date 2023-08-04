@@ -3,12 +3,10 @@ package zcore
 import (
 	"context"
 	"time"
-	"unicode/utf8"
 
 	"github.com/tel-io/tel/v2/otlplog/logskd"
 	"github.com/tel-io/tel/v2/pkg/attrencoder"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	sdk "go.opentelemetry.io/otel/sdk/trace"
@@ -43,8 +41,6 @@ type bodyCore struct {
 
 func (c *bodyCore) With(fields []zapcore.Field) zapcore.Core {
 	clone := c.clone()
-
-	checkUTF8ValidFields(fields)
 
 	for _, field := range fields {
 		if field.Key == logskd.SpanKey {
@@ -82,8 +78,6 @@ func (c *bodyCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.C
 }
 
 func (c *bodyCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
-	checkUTF8ValidFields(fields)
-
 	attrs, err := c.enc.EncodeEntry(ent, fields)
 	if err != nil {
 		return err
@@ -133,23 +127,5 @@ func (c *bodyCore) clone() *bodyCore {
 func addFields(enc zapcore.ObjectEncoder, fields []zapcore.Field) {
 	for i := range fields {
 		fields[i].AddTo(enc)
-	}
-}
-
-func checkUTF8ValidFields(fields []zapcore.Field) {
-	for _, field := range fields {
-		switch field.Type {
-		case zapcore.StringType:
-			if !utf8.ValidString(field.String) {
-				zap.L().Warn("invalid label with non-utf8 value", zap.String("label_name", field.Key))
-			}
-
-		case zapcore.BinaryType:
-			fallthrough
-		case zapcore.ByteStringType:
-			if !utf8.Valid(field.Interface.([]byte)) {
-				zap.L().Warn("invalid label with non-utf8 value", zap.String("label_name", field.Key))
-			}
-		}
 	}
 }

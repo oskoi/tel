@@ -18,14 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
-	"unicode/utf8"
 
 	"github.com/tel-io/tel/v2/otlplog"
 	"github.com/tel-io/tel/v2/otlplog/connection"
 	"github.com/tel-io/tel/v2/otlplog/otlpconfig"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	coltracepb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
@@ -103,29 +100,6 @@ func (c *client) UploadLogs(ctx context.Context, protoSpans *tracepb.ResourceLog
 			_, err := c.tracesClient.Export(ctx, &coltracepb.ExportLogsServiceRequest{
 				ResourceLogs: []*tracepb.ResourceLogs{protoSpans},
 			})
-
-			if err != nil {
-				zap.L().Warn(
-					"failed to export logs",
-					zap.Error(err),
-					zap.Int("batch_size", len(protoSpans.ScopeLogs)),
-				)
-
-				if strings.Contains(err.Error(), "invalid UTF-8 string") {
-					for _, scopeLog := range protoSpans.ScopeLogs {
-						for _, logRec := range scopeLog.LogRecords {
-							for _, attr := range logRec.Attributes {
-								if str := attr.Value.GetStringValue(); str != "" && !utf8.ValidString(str) {
-									zap.L().Warn(
-										"invalid attribute with non-utf8 value",
-										zap.String("attribute_name", attr.Key),
-									)
-								}
-							}
-						}
-					}
-				}
-			}
 
 			return err
 		})
