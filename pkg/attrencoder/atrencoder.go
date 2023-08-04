@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
@@ -84,7 +85,9 @@ func (a *AtrEncoder) AddBinary(key string, value []byte) {
 }
 
 func (a *AtrEncoder) AddByteString(key string, value []byte) {
-	a.attrs = append(a.attrs, attribute.String(key, string(value)))
+	if utf8.Valid(value) {
+		a.attrs = append(a.attrs, attribute.String(key, string(value)))
+	}
 }
 
 func (a *AtrEncoder) AddBool(key string, value bool) {
@@ -139,7 +142,9 @@ func (a *AtrEncoder) AddString(key, value string) {
 	//	return
 	//}
 
-	a.attrs = append(a.attrs, attribute.String(key, value))
+	if utf8.ValidString(value) {
+		a.attrs = append(a.attrs, attribute.String(key, value))
+	}
 }
 
 func (a *AtrEncoder) AddTime(key string, value time.Time) {
