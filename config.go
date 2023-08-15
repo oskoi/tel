@@ -224,16 +224,19 @@ func GetConfigFromEnv() Config {
 		c.OtelConfig.WithInsecure = false
 	}
 
-	if c.Traces.Sampler == neverSampler {
+	switch {
+	case c.Traces.Sampler == neverSampler:
 		c.Traces.sampler = sdktrace.NeverSample()
-	} else if c.Traces.Sampler == alwaysSampler {
+	case c.Traces.Sampler == alwaysSampler:
 		c.Traces.sampler = sdktrace.AlwaysSample()
-	} else if strings.HasPrefix(c.Traces.Sampler, traceIDRatioSampler) {
+	case strings.HasPrefix(c.Traces.Sampler, traceIDRatioSampler):
 		fraction := parseSamplerFraction(c.Traces.Sampler)
 		c.Traces.sampler = sdktrace.TraceIDRatioBased(fraction)
-	} else if strings.HasPrefix(c.Traces.Sampler, statusTraceIDRatioSampler) {
+	case strings.HasPrefix(c.Traces.Sampler, statusTraceIDRatioSampler):
 		fraction := parseSamplerFraction(c.Traces.Sampler)
 		c.Traces.sampler = samplers.StatusTraceIDRatioBased(fraction)
+	default:
+		c.Traces.sampler = sdktrace.NeverSample()
 	}
 
 	return c
